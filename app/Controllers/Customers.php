@@ -2,39 +2,75 @@
 
 namespace App\Controllers;
 
+use App\Models\CustomerModel;
+
 class Customers extends BaseController
 {
     public function index()
     {
-        $customers = [
-            [
-                'full_name' => 'Juan Dela Cruz',
-                'email' => 'juan.delacruz@example.com',
-                'phone' => '0917-123-4567',
-            ],
-            [
-                'full_name' => 'Maria Santos',
-                'email' => 'maria.santos@example.com',
-                'phone' => '0918-234-5678',
-            ],
-            [
-                'full_name' => 'Carlo Reyes',
-                'email' => 'carlo.reyes@example.com',
-                'phone' => '0919-345-6789',
-            ],
-            [
-                'full_name' => 'Angela Garcia',
-                'email' => 'angela.garcia@example.com',
-                'phone' => '0920-456-7890',
-            ],
-            [
-                'full_name' => 'Daniel Flores',
-                'email' => 'daniel.flores@example.com',
-                'phone' => '0921-567-8901',
-            ],
-        ];
+        return view('customers', [
+            'customers' => (new CustomerModel())->orderBy('id', 'DESC')->findAll(),
+            'active' => 'customers',
+        ]);
+    }
 
-        return view('customers', ['customers' => $customers]);
+    public function new()
+    {
+        return view('customers/create', ['active' => 'customers']);
+    }
+
+    public function create()
+    {
+        $fullName = trim((string) $this->request->getPost('full_name'));
+        $email = trim((string) $this->request->getPost('email'));
+        $phone = trim((string) $this->request->getPost('phone'));
+
+        if ($fullName === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return redirect()->back()->withInput()->with('error', 'Enter a full name and a valid email address.');
+        }
+
+        (new CustomerModel())->insert([
+            'full_name' => $fullName,
+            'email' => $email,
+            'phone' => $phone,
+            'created_at' => date('Y-m-d H:i:s'),
+        ]);
+
+        return redirect()->to('/customers')->with('success', 'Customer added successfully.');
+    }
+
+    public function edit($id)
+    {
+        $customer = (new CustomerModel())->find($id);
+        if (!$customer) {
+            return redirect()->to('/customers')->with('error', 'Customer not found.');
+        }
+
+        return view('customers/edit', ['customer' => $customer, 'active' => 'customers']);
+    }
+
+    public function update($id)
+    {
+        $fullName = trim((string) $this->request->getPost('full_name'));
+        $email = trim((string) $this->request->getPost('email'));
+        $phone = trim((string) $this->request->getPost('phone'));
+
+        if ($fullName === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return redirect()->back()->withInput()->with('error', 'Enter a full name and a valid email address.');
+        }
+
+        (new CustomerModel())->update($id, [
+            'full_name' => $fullName,
+            'email' => $email,
+            'phone' => $phone,
+        ]);
+
+        return redirect()->to('/customers')->with('success', 'Customer updated successfully.');
+    }
+
+    public function delete($id)
+    {
+        (new CustomerModel())->delete($id);
+        return redirect()->to('/customers')->with('success', 'Customer deleted successfully.');
     }
 }
-
